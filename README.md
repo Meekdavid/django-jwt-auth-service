@@ -34,7 +34,7 @@ A comprehensive Django REST Framework authentication service with JWT tokens, Re
 
 - **Backend**: Django 5.2.1 + Django REST Framework
 - **Authentication**: djangorestframework-simplejwt
-- **Database**: PostgreSQL (production) / SQLite (development)
+- **Database**: PostgreSQL (both development and production)
 - **Caching**: Redis
 - **Documentation**: drf-spectacular + drf-yasg
 - **Rate Limiting**: django-ratelimit + custom throttles
@@ -178,7 +178,7 @@ python manage.py test
 
 ## 📦 Project Structure
 
-\`\`\`
+```
 auth_service/
 ├── manage.py
 ├── requirements.txt
@@ -210,7 +210,7 @@ auth_service/
     └── helpers/
         ├── yasg_schemas.py
         └── spectacular_schemas.py
-\`\`\`
+```
 
 ## 🤝 Contributing
 
