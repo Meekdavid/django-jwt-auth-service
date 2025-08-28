@@ -13,8 +13,9 @@ cmds = [
 ]
 
 [start]
-cmd = "python manage.py migrate --noinput && gunicorn auth_service.wsgi:application --bind 0.0.0.0:$PORT --workers 2"
+cmd = "chmod +x start.sh && ./start.sh"
 
 [variables]
 PYTHONPATH = "/app"
 DJANGO_SETTINGS_MODULE = "auth_service.settings.prod"
+PORT = "8000"
