@@ -220,10 +220,6 @@ auth_service/
 4. Add tests
 5. Submit a pull request
 
-## 📄 License
-
-This project is licensed under the MIT License.
-
 ## 📞 Support
 
-For questions or issues, please open a GitHub issue or contact the development team.
+For questions or issues, please open a GitHub issue.

@@ -16,9 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.http import JsonResponse
-from django.db import connection
-from django.core.cache import cache
+
+# Health check import
+from .views import health_check
 
 # drf-yasg imports (backward compatibility)
 from rest_framework import permissions
@@ -31,20 +31,6 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
-
-def healthz(_request):
-    db_ok = True
-    cache_ok = True
-    try:
-        connection.ensure_connection()
-    except Exception:
-        db_ok = False
-    try:
-        cache.set("healthz", "ok", 5)
-        cache_ok = cache.get("healthz") == "ok"
-    except Exception:
-        cache_ok = False
-    return JsonResponse({"status": "ok", "db": db_ok, "cache": cache_ok})
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -60,7 +46,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("healthz", healthz),
+    path("healthz", health_check, name="health_check"),
     path("api/", include("accounts.urls")),
     
     # Legacy drf-yasg documentation (backward compatibility)
