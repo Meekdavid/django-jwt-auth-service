@@ -1,0 +1,30 @@
+# Django Auth Service Requirements
+# Install with: pip install -r requirements.txt
+# For development, create a virtual environment first:
+# python -m venv venv
+# venv\Scripts\activate  (Windows) or source venv/bin/activate (Linux/Mac)
+
+# Core Django packages
+Django>=5.0,<6.0
+djangorestframework>=3.16.0
+
+# Database
+psycopg[binary]>=3.2.0
+dj-database-url>=3.0.0
+
+# Authentication
+djangorestframework-simplejwt>=5.5.0
+
+# Cache/Redis
+django-redis>=6.0.0
+redis>=6.4.0
+
+# Environment variables
+python-dotenv>=1.1.0
+
+# API Documentation
+drf-yasg>=1.21.0
+
+# Additional dependencies that may be needed
+PyJWT>=2.10.0
+uritemplate>=4.2.0
