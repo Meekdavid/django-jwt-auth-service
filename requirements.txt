@@ -30,6 +30,13 @@ drf-spectacular>=0.27.0
 gunicorn>=23.0.0
 whitenoise>=6.8.0
 
+# Testing dependencies
+pytest>=8.0.0
+pytest-django>=4.8.0
+pytest-cov>=4.1.0
+factory-boy>=3.3.0
+freezegun>=1.4.0
+
 # Additional dependencies
 PyJWT>=2.10.0
 uritemplate>=4.2.0

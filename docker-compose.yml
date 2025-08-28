@@ -1,0 +1,181 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: auth_service_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: auth_service_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - auth_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d auth_service_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: auth_service_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass redis123
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - auth_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # Django Web Application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auth_service_web
+    restart: unless-stopped
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        while ! nc -z db 5432; do sleep 1; done &&
+        echo 'Database is ready!' &&
+        echo 'Waiting for Redis...' &&
+        while ! nc -z redis 6379; do sleep 1; done &&
+        echo 'Redis is ready!' &&
+        python manage.py migrate --noinput &&
+        python manage.py collectstatic --noinput &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+    environment:
+      - DJANGO_SETTINGS_MODULE=auth_service.settings.dev
+      - DEBUG=1
+      - SECRET_KEY=docker-dev-secret-key-change-in-production
+      - DATABASE_URL=postgresql://postgres:postgres123@db:5432/auth_service_db
+      - REDIS_URL=redis://:redis123@redis:6379/0
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,web
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - auth_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Django Web Application (Production-like)
+  web-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auth_service_web_prod
+    restart: unless-stopped
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        while ! nc -z db 5432; do sleep 1; done &&
+        echo 'Database is ready!' &&
+        echo 'Waiting for Redis...' &&
+        while ! nc -z redis 6379; do sleep 1; done &&
+        echo 'Redis is ready!' &&
+        python manage.py migrate --noinput &&
+        python manage.py collectstatic --noinput &&
+        gunicorn --bind 0.0.0.0:8000 --workers 2 auth_service.wsgi:application
+      "
+    environment:
+      - DJANGO_SETTINGS_MODULE=auth_service.settings.prod
+      - DEBUG=0
+      - SECRET_KEY=docker-prod-secret-key-change-in-production
+      - DATABASE_URL=postgresql://postgres:postgres123@db:5432/auth_service_db
+      - REDIS_URL=redis://:redis123@redis:6379/0
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,web-prod
+    volumes:
+      - static_volume:/app/staticfiles
+    ports:
+      - "8001:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - auth_network
+    profiles:
+      - prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Test Runner Service
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auth_service_test
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        while ! nc -z db 5432; do sleep 1; done &&
+        echo 'Database is ready!' &&
+        echo 'Waiting for Redis...' &&
+        while ! nc -z redis 6379; do sleep 1; done &&
+        echo 'Redis is ready!' &&
+        python manage.py test --verbosity=2
+      "
+    environment:
+      - DJANGO_SETTINGS_MODULE=auth_service.settings.dev
+      - DEBUG=1
+      - SECRET_KEY=docker-test-secret-key
+      - DATABASE_URL=postgresql://postgres:postgres123@db:5432/auth_service_test_db
+      - REDIS_URL=redis://:redis123@redis:6379/1
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0,test
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - auth_network
+    profiles:
+      - test
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  static_volume:
+    driver: local
+
+networks:
+  auth_network:
+    driver: bridge

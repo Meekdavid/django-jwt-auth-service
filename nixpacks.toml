@@ -1,11 +1,20 @@
 [phases.setup]
-nixPkgs = ["...", "python312"]
+nixPkgs = ["python312", "python312Packages.pip", "python312Packages.setuptools", "gcc", "postgresql"]
 
 [phases.install]
-cmds = ["pip install -r requirements.txt"]
+cmds = [
+    "python -m pip install --upgrade pip",
+    "python -m pip install -r requirements.txt"
+]
 
 [phases.build]
-cmds = ["python manage.py collectstatic --noinput"]
+cmds = [
+    "python manage.py collectstatic --noinput"
+]
 
 [start]
-cmd = "python manage.py migrate --noinput && gunicorn auth_service.wsgi:application --bind 0.0.0.0:$PORT"
+cmd = "python manage.py migrate --noinput && gunicorn auth_service.wsgi:application --bind 0.0.0.0:$PORT --workers 2"
+
+[variables]
+PYTHONPATH = "/app"
+DJANGO_SETTINGS_MODULE = "auth_service.settings.prod"
