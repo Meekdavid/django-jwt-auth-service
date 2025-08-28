@@ -1,6 +1,31 @@
 # 🔐 Django JWT Authentication Service
 
+[![Deployment Status](https://img.shields.io/badge/Deployment-Live%20on%20Railway-success?style=for-the-badge&logo=railway)](https://web-production-46466.up.railway.app/)
+[![API Documentation](https://img.shields.io/badge/API%20Docs-Swagger%20UI-blue?style=for-the-badge&logo=swagger)](https://web-production-46466.up.railway.app/swagger/)
+[![Health Check](https://img.shields.io/badge/Health-Check%20Status-green?style=for-the-badge)](https://web-production-46466.up.railway.app/healthz)
+
 A comprehensive Django REST Framework authentication service with JWT tokens, Redis-based password reset, rate limiting, and interactive API documentation.
+
+## 🌟 **Live Demo**
+
+🚀 **[Try the Live API](https://web-production-46466.up.railway.app/)**
+
+### **📱 Quick Test Links:**
+- 🏥 **Health Check**: [/healthz](https://web-production-46466.up.railway.app/healthz)
+- 📚 **Interactive API Docs**: [/swagger/](https://web-production-46466.up.railway.app/swagger/)
+- 🔧 **API Schema**: [/api/schema/swagger/](https://web-production-46466.up.railway.app/api/schema/swagger/)
+- 🔐 **Authentication Endpoints**: [/api/auth/](https://web-production-46466.up.railway.app/api/auth/)
+
+### **⚡ Quick API Test:**
+```bash
+# Health Check
+curl https://web-production-46466.up.railway.app/healthz
+
+# Register User
+curl -X POST https://web-production-46466.up.railway.app/api/auth/register/ \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"securepass123","password2":"securepass123","full_name":"Test User"}'
+```
 
 ## ✨ Features
 
@@ -70,10 +95,10 @@ A comprehensive Django REST Framework authentication service with JWT tokens, Re
 - Redis
 
 ### 1. Clone the Repository
-\`\`\`bash
-git clone <repository-url>
+```bash
+git clone https://github.com/Meekdavid/django-jwt-auth-service.git
 cd auth_service
-\`\`\`
+```
 
 ### 2. Set Up Virtual Environment
 \`\`\`bash
@@ -118,8 +143,12 @@ python manage.py runserver
 
 ## 📖 API Documentation
 
-Once the server is running, access the interactive API documentation:
+### **🌐 Live Documentation (Production):**
+- **🚀 Live Swagger UI**: [https://web-production-46466.up.railway.app/swagger/](https://web-production-46466.up.railway.app/swagger/)
+- **📋 Live ReDoc**: [https://web-production-46466.up.railway.app/api/schema/redoc/](https://web-production-46466.up.railway.app/api/schema/redoc/)
+- **🔧 Live API Schema**: [https://web-production-46466.up.railway.app/api/schema/](https://web-production-46466.up.railway.app/api/schema/)
 
+### **🏠 Local Development:**
 - **Swagger UI**: http://localhost:8000/api/schema/swagger/
 - **ReDoc**: http://localhost:8000/api/schema/redoc/
 - **Legacy Swagger**: http://localhost:8000/swagger/
@@ -164,17 +193,52 @@ auth_service/settings/
 
 ## 🧪 Testing
 
-### Running Tests
-\`\`\`bash
+### Running Tests Locally
+```bash
 python manage.py test
-\`\`\`
+```
 
-### Testing Authentication Flow
-1. **Register**: \`POST /api/auth/register/\`
-2. **Login**: \`POST /api/auth/login/\`
-3. **Access Protected**: \`GET /api/auth/protected-test/\`
-4. **Refresh Token**: \`POST /api/auth/refresh/\`
-5. **Logout**: \`POST /api/auth/logout/\`
+### **🌐 Testing Live API (Production)**
+
+#### **1. Health Check**
+```bash
+curl https://web-production-46466.up.railway.app/healthz
+```
+
+#### **2. User Registration**
+```bash
+curl -X POST https://web-production-46466.up.railway.app/api/auth/register/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "testuser@example.com",
+    "password": "SecurePass123!",
+    "password2": "SecurePass123!",
+    "full_name": "Test User"
+  }'
+```
+
+#### **3. User Login**
+```bash
+curl -X POST https://web-production-46466.up.railway.app/api/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "testuser@example.com",
+    "password": "SecurePass123!"
+  }'
+```
+
+#### **4. Access Protected Endpoint**
+```bash
+curl -X GET https://web-production-46466.up.railway.app/api/auth/protected-test/ \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+### **🏠 Local Testing Authentication Flow**
+1. **Register**: `POST /api/auth/register/`
+2. **Login**: `POST /api/auth/login/`
+3. **Access Protected**: `GET /api/auth/protected-test/`
+4. **Refresh Token**: `POST /api/auth/refresh/`
+5. **Logout**: `POST /api/auth/logout/`
 
 ## 📦 Project Structure
 
