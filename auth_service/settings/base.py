@@ -13,16 +13,20 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-change-me")
 DEBUG = os.environ.get("DEBUG", "0") in {"1", "true", "True"}
 
 # Enhanced ALLOWED_HOSTS configuration for deployment
-ALLOWED_HOSTS_RAW = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost,*.railway.app,*.up.railway.app")
+ALLOWED_HOSTS_RAW = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost")
 ALLOWED_HOSTS = [h.strip() for h in ALLOWED_HOSTS_RAW.split(",") if h.strip()]
 
-# Add Railway domain support for production
-if not DEBUG:
-    ALLOWED_HOSTS.extend([
-        '.railway.app',
-        '.up.railway.app',
-        'web-production-46466.up.railway.app',  # Your specific Railway domain
-    ])
+# Always allow Railway domains for production deployments
+ALLOWED_HOSTS.extend([
+    '.railway.app',
+    '.up.railway.app', 
+    'web-production-46466.up.railway.app',
+    '*.railway.app',
+    '*.up.railway.app',
+])
+
+# Remove duplicates and empty strings
+ALLOWED_HOSTS = list(set([host for host in ALLOWED_HOSTS if host.strip()]))
 
 INSTALLED_APPS = [
     "django.contrib.admin",
