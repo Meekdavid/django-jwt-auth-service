@@ -55,6 +55,7 @@ class TestData:
     """Common test data used across multiple test files."""
     
     VALID_PASSWORD = "SecurePass123!"
+    DEFAULT_PASSWORD = "SecurePass123!"  # Add this for backwards compatibility
     WEAK_PASSWORD = "123"
     INVALID_EMAIL = "invalid-email"
     

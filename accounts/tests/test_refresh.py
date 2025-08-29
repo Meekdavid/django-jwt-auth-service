@@ -23,7 +23,7 @@ class TokenRefreshTestCase(APITestCase):
     def setUp(self):
         """Set up test dependencies."""
         self.client = APIClient()
-        self.refresh_url = reverse('auth:refresh')
+        self.refresh_url = reverse('auth-refresh')
         self.user = UserFactory()
         self.refresh_token = RefreshToken.for_user(self.user)
 

@@ -252,9 +252,9 @@ SPECTACULAR_SETTINGS = {
     },
     
     # Custom preprocessing hooks
-    "PREPROCESSING_HOOKS": [
-        "drf_spectacular.contrib.djangorestframework_simplejwt.preprocessing.SimpleJWTSchemaPreprocessingHook",
-    ],
+    # "PREPROCESSING_HOOKS": [
+    #     "drf_spectacular.contrib.djangorestframework_simplejwt.preprocessing.SimpleJWTSchemaPreprocessingHook",
+    # ],
     
     # Schema generation settings
     "SCHEMA_PATH_PREFIX": "/api/",

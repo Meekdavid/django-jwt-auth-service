@@ -20,7 +20,7 @@ class UserLogoutTestCase(APITestCase):
     def setUp(self):
         """Set up test dependencies."""
         self.client = APIClient()
-        self.logout_url = reverse('auth:logout')
+        self.logout_url = reverse('auth-logout')
         self.user = UserFactory()
         self.refresh_token = RefreshToken.for_user(self.user)
         self.access_token = self.refresh_token.access_token
@@ -111,7 +111,7 @@ class UserLogoutTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
         # Try to use the refresh token after logout
-        refresh_url = reverse('auth:refresh')
+        refresh_url = reverse('auth-refresh')
         refresh_response = self.client.post(refresh_url, logout_data, format='json')
         self.assertEqual(refresh_response.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -181,7 +181,7 @@ class UserLogoutTestCase(APITestCase):
         
         # Other user should still be able to use their tokens
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {other_access}')
-        protected_url = reverse('auth:protected-test')
+        protected_url = reverse('auth-protected-test')
         response = self.client.get(protected_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 

@@ -24,7 +24,7 @@ class ForgotPasswordTestCase(APITestCase):
     def setUp(self):
         """Set up test dependencies."""
         self.client = APIClient()
-        self.forgot_password_url = reverse('auth:forgot-password')
+        self.forgot_password_url = reverse('auth-forgot-password')
         self.user = UserFactory()
         
         # Clear cache before each test
@@ -146,7 +146,7 @@ class ResetPasswordTestCase(APITestCase):
     def setUp(self):
         """Set up test dependencies."""
         self.client = APIClient()
-        self.reset_password_url = reverse('auth:reset-password')
+        self.reset_password_url = reverse('auth-reset-password')
         self.user = UserFactory()
         self.reset_service = PasswordResetService()
         self.reset_token = self.reset_service.generate_reset_token(self.user.id)

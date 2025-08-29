@@ -19,7 +19,7 @@ class UserRegistrationTestCase(APITestCase):
     def setUp(self):
         """Set up test dependencies."""
         self.client = APIClient()
-        self.register_url = reverse('auth:register')
+        self.register_url = reverse('auth-register')
         self.valid_data = TestData.VALID_USER_DATA.copy()
 
     def test_successful_registration(self):

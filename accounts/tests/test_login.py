@@ -20,7 +20,7 @@ class UserLoginTestCase(APITestCase):
     def setUp(self):
         """Set up test dependencies."""
         self.client = APIClient()
-        self.login_url = reverse('auth:login')
+        self.login_url = reverse('auth-login')
         self.password = TestData.VALID_PASSWORD
         self.user = UserFactory(password=self.password)
 
