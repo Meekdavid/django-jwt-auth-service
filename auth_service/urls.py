@@ -50,6 +50,9 @@ try:
         ),
         public=True,
         permission_classes=[permissions.AllowAny],
+        patterns=[
+            path("api/", include("accounts.urls")),
+        ],
     )
     logger.info("✅ DRF-YASG schema view created successfully")
 except Exception as e:

@@ -290,6 +290,6 @@ SPECTACULAR_SETTINGS = {
     
     # Schema generation settings
     "SCHEMA_PATH_PREFIX": "/api/",
-    "SCHEMA_PATH_PREFIX_TRIM": True,
+    "SCHEMA_PATH_PREFIX_TRIM": False,  # Keep full API paths in documentation
     "SERVE_PUBLIC": True,
 }
