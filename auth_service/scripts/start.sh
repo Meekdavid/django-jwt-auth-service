@@ -7,6 +7,15 @@
 export PORT=${PORT:-8000}
 
 echo "🚀 Starting Django JWT Auth Service on port $PORT..."
+echo "📋 Environment Info:"
+echo "  - DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE"
+echo "  - DEBUG: $DEBUG"
+echo "  - DATABASE_URL: ${DATABASE_URL:0:20}... (truncated)"
+echo "  - REDIS_URL: ${REDIS_URL:0:20}... (truncated)"
+
+# Test Django configuration
+echo "🔧 Testing Django configuration..."
+python manage.py check --deploy
 
 # Wait for database to be ready
 echo "⏳ Waiting for database connection..."
