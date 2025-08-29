@@ -69,9 +69,75 @@ WSGI_APPLICATION = "auth_service.wsgi.application"
 
 # Railway PORT configuration
 RAILWAY_PORT = os.environ.get("PORT", "8000")
-print(f"🚂 Railway PORT detected: {RAILWAY_PORT}")
+print(f"Railway PORT detected: {RAILWAY_PORT}")
 
-# Logging
+# Enhanced logging for debugging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'detailed': {
+            'format': '[{asctime}] [{levelname}] [RAILWAY] {name}: {message}',
+            'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S'
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'detailed',
+            'level': 'DEBUG',
+        },
+        'error_file': {
+            'class': 'logging.StreamHandler',  # Railway doesn't support file logging
+            'formatter': 'detailed',
+            'level': 'ERROR',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console', 'error_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'django.server': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'gunicorn': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'railway_startup': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'auth_service': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        'accounts': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
+
+# Database
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://postgres:tVmkcXvVXeaTjVeWaSoCJXQPaQdcfDDO@yamanote.proxy.rlwy.net:19661/railway")
 DATABASES = {
     "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
