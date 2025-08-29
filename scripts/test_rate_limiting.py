@@ -13,7 +13,14 @@ Requirements:
     - requests library (pip install requests)
 """
 
-import requests
+try:
+    import requests  # type: ignore
+except ImportError:
+    print("❌ Error: 'requests' library not found.")
+    print("Please install it with: pip install requests")
+    import sys
+    sys.exit(1)
+
 import time
 import json
 import sys

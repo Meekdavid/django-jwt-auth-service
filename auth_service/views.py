@@ -15,40 +15,47 @@ def health_check(request):
     Health check endpoint for deployment monitoring.
     
     Checks:
-    - Database connectivity
-    - Redis connectivity
+    - Database connectivity (critical)
+    - Redis connectivity (optional)
     - Basic system status
     
     Returns:
-    - 200: All systems operational
-    - 503: Service unavailable (dependencies failing)
+    - 200: Essential systems operational (database)
+    - 503: Service unavailable (database failing)
     """
+    logger.info("🏥 Health check requested")
+    
     status = "healthy"
     checks = {}
     
-    # Check database connectivity
+    # Check database connectivity (critical)
     try:
+        logger.info("🗄️ Testing database connection...")
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
             checks["database"] = "connected"
+            logger.info("✅ Database connection successful")
     except Exception as e:
-        logger.error(f"Database health check failed: {e}")
+        logger.error(f"❌ Database health check failed: {e}")
         checks["database"] = "disconnected"
-        status = "unhealthy"
+        status = "unhealthy"  # Database failure = unhealthy
     
-    # Check Redis connectivity
+    # Check Redis connectivity (optional)
     try:
+        logger.info("💾 Testing cache connection...")
         cache.set("health_check", "ok", 10)
         redis_test = cache.get("health_check")
         if redis_test == "ok":
             checks["redis"] = "connected"
+            logger.info("✅ Cache connection successful")
         else:
             checks["redis"] = "disconnected"
-            status = "unhealthy"
+            # Don't mark as unhealthy - Redis is optional with dummy cache fallback
+            logger.warning("⚠️ Redis not available, using fallback cache")
     except Exception as e:
-        logger.error(f"Redis health check failed: {e}")
+        logger.warning(f"⚠️ Redis health check failed (using fallback): {e}")
         checks["redis"] = "disconnected"
-        status = "unhealthy"
+        # Don't mark as unhealthy - Redis is optional
     
     # System info
     checks["status"] = status
@@ -61,4 +68,5 @@ def health_check(request):
     }
     
     status_code = 200 if status == "healthy" else 503
+    logger.info(f"🏥 Health check result: {status} (HTTP {status_code})")
     return JsonResponse(response_data, status=status_code)

@@ -16,6 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Health check import
 from .views import health_check
@@ -32,34 +37,58 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 
-schema_view = get_schema_view(
-    openapi.Info(
-        title="Auth Service API",
-        default_version="v1",
-        description="User registration & JWT auth (PostgreSQL + Redis project)",
-        contact=openapi.Contact(email="dev@billstation.example"),
-        license=openapi.License(name="MIT"),
-    ),
-    public=True,
-    permission_classes=[permissions.AllowAny],
-)
+logger.info("🔧 Loading URL configuration...")
 
-urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("healthz", health_check, name="health_check"),
-    path("api/", include("accounts.urls")),
-    
-    # Legacy drf-yasg documentation (backward compatibility)
-    path("docs.json", schema_view.without_ui(cache_timeout=0), name="schema-json"),
-    path("docs/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
-    path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
-    
-    # New drf-spectacular documentation (recommended)
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    path("api/schema/swagger/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
-    path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
-    
-    # Alternative paths for easier access
-    path("swagger/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui-alt"),
-    path("schema/", SpectacularAPIView.as_view(), name="schema-alt"),
-]
+try:
+    schema_view = get_schema_view(
+        openapi.Info(
+            title="Auth Service API",
+            default_version="v1",
+            description="User registration & JWT auth (PostgreSQL + Redis project)",
+            contact=openapi.Contact(email="dev@billstation.example"),
+            license=openapi.License(name="MIT"),
+        ),
+        public=True,
+        permission_classes=[permissions.AllowAny],
+    )
+    logger.info("✅ DRF-YASG schema view created successfully")
+except Exception as e:
+    logger.error(f"❌ DRF-YASG schema view creation failed: {e}")
+    import traceback
+    logger.error(traceback.format_exc())
+
+try:
+    urlpatterns = [
+        path("admin/", admin.site.urls),
+        path("healthz", health_check, name="health_check"),
+        path("api/", include("accounts.urls")),
+        
+        # Legacy drf-yasg documentation (backward compatibility)
+        path("docs.json", schema_view.without_ui(cache_timeout=0), name="schema-json"),
+        path("docs/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
+        path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
+        
+        # New drf-spectacular documentation (recommended)
+        path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+        path("api/schema/swagger/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+        path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+        
+        # Alternative paths for easier access
+        path("swagger/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui-alt"),
+        path("schema/", SpectacularAPIView.as_view(), name="schema-alt"),
+    ]
+    logger.info("✅ URL patterns configured successfully")
+except Exception as e:
+    logger.error(f"❌ URL patterns configuration failed: {e}")
+    import traceback
+    logger.error(traceback.format_exc())
+    # Fallback minimal URL patterns
+    urlpatterns = [
+        path("admin/", admin.site.urls),
+        path("healthz", health_check, name="health_check"),
+        path("api/", include("accounts.urls")),
+    ]
+
+# Serve static files in production (handled by WhiteNoise)
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
