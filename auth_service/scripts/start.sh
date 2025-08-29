@@ -15,6 +15,13 @@ echo "  - REDIS_URL: ${REDIS_URL:0:30}... (truncated)"
 echo "  - Python Path: $PYTHONPATH"
 echo "  - Working Directory: $(pwd)"
 
+# Check if DATABASE_URL is empty or malformed
+if [ -z "$DATABASE_URL" ]; then
+    echo "⚠️ DATABASE_URL is empty or not set"
+elif [[ ! "$DATABASE_URL" =~ ^postgres ]]; then
+    echo "⚠️ DATABASE_URL does not start with 'postgres': $DATABASE_URL"
+fi
+
 # Test Django setup first
 echo "🔧 Testing Django configuration..."
 python debug_django.py

@@ -21,6 +21,13 @@ try:
     from django.conf import settings
     print(f"✅ Settings loaded: {settings.SETTINGS_MODULE}")
     
+    # Check database URL configuration
+    if hasattr(settings, 'PRODUCTION_DATABASE_URL'):
+        print(f"🔧 Production Database URL: {settings.PRODUCTION_DATABASE_URL[:50]}...")
+    
+    database_config = settings.DATABASES['default']
+    print(f"🗄️ Database config: {database_config['ENGINE']} at {database_config['HOST']}:{database_config['PORT']}/{database_config['NAME']}")
+    
     # Test database connection
     from django.db import connection
     with connection.cursor() as cursor:

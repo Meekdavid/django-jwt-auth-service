@@ -11,7 +11,15 @@ DATABASE_PUBLIC_URL = "postgresql://postgres:tVmkcXvVXeaTjVeWaSoCJXQPaQdcfDDO@ya
 
 # Override database configuration for production
 # Priority: DATABASE_URL (from Railway service) > DATABASE_PUBLIC_URL
-PRODUCTION_DATABASE_URL = os.getenv("DATABASE_URL", DATABASE_PUBLIC_URL)
+PRODUCTION_DATABASE_URL = os.getenv("DATABASE_URL")
+if not PRODUCTION_DATABASE_URL or PRODUCTION_DATABASE_URL.strip() == "":
+    PRODUCTION_DATABASE_URL = DATABASE_PUBLIC_URL
+
+# Validate the database URL before parsing
+if not PRODUCTION_DATABASE_URL.startswith(('postgresql://', 'postgres://')):
+    print(f"⚠️ Invalid database URL detected: {PRODUCTION_DATABASE_URL}")
+    PRODUCTION_DATABASE_URL = DATABASE_PUBLIC_URL
+    print(f"✅ Using fallback DATABASE_PUBLIC_URL: {DATABASE_PUBLIC_URL}")
 
 DATABASES = {
     "default": dj_database_url.parse(PRODUCTION_DATABASE_URL, conn_max_age=600)
