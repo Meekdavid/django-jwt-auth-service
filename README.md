@@ -248,6 +248,42 @@ auth_service/settings/
 
 ## 🧪 Testing
 
+### Unit Tests
+```bash
+# Run all tests
+python manage.py test
+
+# Run specific test modules
+python manage.py test accounts.tests.test_views
+python manage.py test accounts.tests.test_models
+python manage.py test accounts.tests.test_serializers
+```
+
+### Integration Tests
+
+#### Rate Limiting Tests
+Test the rate limiting functionality with the included integration test script:
+
+```bash
+# Start Django server first
+python manage.py runserver
+
+# In another terminal, run the rate limiting tests
+python scripts/test_rate_limiting.py
+
+# Or use the automated test runner (Windows)
+scripts\run_rate_limiting_tests.bat
+
+# Or use the automated test runner (Linux/Mac)
+bash scripts/run_rate_limiting_tests.sh
+```
+
+The rate limiting test script will:
+- Test login endpoint rate limiting (5 attempts/minute)
+- Test forgot password rate limiting (3 attempts/minute)  
+- Test registration rate limiting (10 attempts/hour)
+- Display detailed response information including rate limit headers
+
 ### Running Tests Locally
 ```bash
 python manage.py test

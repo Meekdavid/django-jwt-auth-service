@@ -1,8 +1,21 @@
 from .base import *
 import os
+import dj_database_url
 
 # Security settings for production
 DEBUG = False
+
+# Production Database Configuration
+# Use Railway's DATABASE_PUBLIC_URL for production
+DATABASE_PUBLIC_URL = "postgresql://postgres:tVmkcXvVXeaTjVeWaSoCJXQPaQdcfDDO@yamanote.proxy.rlwy.net:19661/railway"
+
+# Override database configuration for production
+# Priority: DATABASE_URL (from Railway service) > DATABASE_PUBLIC_URL
+PRODUCTION_DATABASE_URL = os.getenv("DATABASE_URL", DATABASE_PUBLIC_URL)
+
+DATABASES = {
+    "default": dj_database_url.parse(PRODUCTION_DATABASE_URL, conn_max_age=600)
+}
 
 # HTTPS and security headers (Railway-compatible)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")

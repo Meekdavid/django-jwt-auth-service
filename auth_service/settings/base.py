@@ -74,8 +74,24 @@ WSGI_APPLICATION = "auth_service.wsgi.application"
 
 # --- Database (Postgres via DATABASE_URL) ---
 DEFAULT_DB_URL = "postgresql://postgres:postgres@localhost:5432/postgres"
+
+# Railway Database Public URL
+DATABASE_PUBLIC_URL = "postgresql://postgres:tVmkcXvVXeaTjVeWaSoCJXQPaQdcfDDO@yamanote.proxy.rlwy.net:19661/railway"
+
+# Database URL priority:
+# 1. DATABASE_URL from environment (Railway provides this)
+# 2. DATABASE_PUBLIC_URL from environment (Railway fallback)  
+# 3. Hardcoded DATABASE_PUBLIC_URL (Railway default)
+# 4. DEFAULT_DB_URL (local development)
+DATABASE_URL = (
+    os.getenv("DATABASE_URL") or 
+    os.getenv("DATABASE_PUBLIC_URL") or 
+    DATABASE_PUBLIC_URL if 'railway' in os.getenv("DJANGO_SETTINGS_MODULE", "") or not DEBUG else 
+    DEFAULT_DB_URL
+)
+
 DATABASES = {
-    "default": dj_database_url.parse(os.getenv("DATABASE_URL", DEFAULT_DB_URL), conn_max_age=600)
+    "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
 }
 
 # --- Redis cache via REDIS_URL ---

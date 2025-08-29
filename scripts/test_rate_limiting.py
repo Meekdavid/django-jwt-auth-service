@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 """
-Rate Limiting Test Script for Auth Service
+Rate Limiting Integration Test Script for Auth Service
 
 This script demonstrates and tests the rate limiting functionality
 on login and forgot-password endpoints.
 
 Usage:
-    python test_rate_limiting.py
+    python scripts/test_rate_limiting.py
 
 Requirements:
     - Django server running on http://127.0.0.1:8000
@@ -16,14 +16,20 @@ Requirements:
 import requests
 import time
 import json
+import sys
+import os
 from datetime import datetime
+
+# Add project root to Python path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
 
 BASE_URL = "http://127.0.0.1:8000"
 LOGIN_URL = f"{BASE_URL}/api/auth/login/"
 FORGOT_PASSWORD_URL = f"{BASE_URL}/api/auth/forgot-password/"
 REGISTER_URL = f"{BASE_URL}/api/auth/register/"
 
-def print_response(response, test_name):
+def print_response(response: requests.Response, test_name: str) -> None:
     """Print formatted response information"""
     print(f"\n{'='*50}")
     print(f"TEST: {test_name}")
@@ -39,11 +45,11 @@ def print_response(response, test_name):
     try:
         data = response.json()
         print(f"Response: {json.dumps(data, indent=2)}")
-    except:
+    except json.JSONDecodeError:
         print(f"Response Text: {response.text}")
     print(f"{'='*50}")
 
-def test_login_rate_limiting():
+def test_login_rate_limiting() -> None:
     """Test login endpoint rate limiting (5 attempts per minute)"""
     print(f"\n🔐 TESTING LOGIN RATE LIMITING (5/min)")
     
@@ -54,16 +60,20 @@ def test_login_rate_limiting():
     
     for i in range(7):  # Try 7 times (should fail after 5)
         print(f"\nAttempt {i+1}/7")
-        response = requests.post(LOGIN_URL, json=login_data)
-        print_response(response, f"Login Attempt {i+1}")
-        
-        if response.status_code == 429:
-            print("🚫 RATE LIMIT TRIGGERED!")
+        try:
+            response = requests.post(LOGIN_URL, json=login_data, timeout=10)
+            print_response(response, f"Login Attempt {i+1}")
+            
+            if response.status_code == 429:
+                print("🚫 RATE LIMIT TRIGGERED!")
+                break
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Request failed: {e}")
             break
         
         time.sleep(1)  # Small delay between requests
 
-def test_forgot_password_rate_limiting():
+def test_forgot_password_rate_limiting() -> None:
     """Test forgot-password endpoint rate limiting (3 attempts per minute)"""
     print(f"\n🔒 TESTING FORGOT PASSWORD RATE LIMITING (3/min)")
     
@@ -73,16 +83,20 @@ def test_forgot_password_rate_limiting():
     
     for i in range(5):  # Try 5 times (should fail after 3)
         print(f"\nAttempt {i+1}/5")
-        response = requests.post(FORGOT_PASSWORD_URL, json=forgot_data)
-        print_response(response, f"Forgot Password Attempt {i+1}")
-        
-        if response.status_code == 429:
-            print("🚫 RATE LIMIT TRIGGERED!")
+        try:
+            response = requests.post(FORGOT_PASSWORD_URL, json=forgot_data, timeout=10)
+            print_response(response, f"Forgot Password Attempt {i+1}")
+            
+            if response.status_code == 429:
+                print("🚫 RATE LIMIT TRIGGERED!")
+                break
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Request failed: {e}")
             break
         
         time.sleep(1)  # Small delay between requests
 
-def test_registration_rate_limiting():
+def test_registration_rate_limiting() -> None:
     """Test registration endpoint rate limiting (10 attempts per hour)"""
     print(f"\n📝 TESTING REGISTRATION RATE LIMITING (10/hour)")
     
@@ -96,12 +110,36 @@ def test_registration_rate_limiting():
         }
         
         print(f"\nAttempt {i+1}/3")
-        response = requests.post(REGISTER_URL, json=register_data)
-        print_response(response, f"Registration Attempt {i+1}")
+        try:
+            response = requests.post(REGISTER_URL, json=register_data, timeout=10)
+            print_response(response, f"Registration Attempt {i+1}")
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Request failed: {e}")
+            break
         
         time.sleep(1)
 
-def main():
+def check_server_connectivity() -> bool:
+    """Check if the Django server is running and accessible"""
+    try:
+        response = requests.get(f"{BASE_URL}/swagger/", timeout=5)
+        if response.status_code == 200:
+            print("✅ Server is accessible")
+            return True
+        else:
+            print(f"⚠️ Server responded with status {response.status_code}")
+            return False
+    except requests.exceptions.ConnectionError:
+        print("❌ Could not connect to server. Make sure Django server is running on port 8000")
+        return False
+    except requests.exceptions.Timeout:
+        print("❌ Server request timed out")
+        return False
+    except Exception as e:
+        print(f"❌ Error checking server connectivity: {e}")
+        return False
+
+def main() -> None:
     """Run all rate limiting tests"""
     print("🛡️ AUTH SERVICE RATE LIMITING TEST")
     print("="*60)
@@ -109,15 +147,11 @@ def main():
     print("of the authentication endpoints.")
     print("="*60)
     
+    # Test server connectivity
+    if not check_server_connectivity():
+        sys.exit(1)
+    
     try:
-        # Test server connectivity
-        response = requests.get(f"{BASE_URL}/swagger/")
-        if response.status_code != 200:
-            print("❌ Server not accessible. Make sure Django server is running on port 8000")
-            return
-        
-        print("✅ Server is accessible")
-        
         # Run tests
         test_login_rate_limiting()
         
@@ -135,10 +169,12 @@ def main():
         print("Check the responses above to see rate limiting in action.")
         print("429 status codes indicate successful rate limiting.")
         
-    except requests.exceptions.ConnectionError:
-        print("❌ Could not connect to server. Make sure Django server is running on port 8000")
+    except KeyboardInterrupt:
+        print("\n⚠️ Test interrupted by user")
+        sys.exit(1)
     except Exception as e:
         print(f"❌ Error during testing: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
