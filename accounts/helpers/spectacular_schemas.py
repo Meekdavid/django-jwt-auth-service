@@ -1,5 +1,6 @@
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample, inline_serializer
 from rest_framework import serializers
+from typing import Dict, Any, Optional, Type, Union
 from accounts.serializers import (
     RegisterRequestSerializer, RegisterSerializer,
     LoginSerializer, LogoutSerializer, RefreshTokenSerializer,
@@ -7,9 +8,10 @@ from accounts.serializers import (
 )
 
 # Create inline serializers for response schemas
-def create_response_serializer(data_serializer=None, description="Success"):
+def create_response_serializer(data_serializer: Optional[Type[serializers.Serializer]] = None, description: str = "Success") -> Any:
     """Create a standardized response serializer"""
-    fields = {
+    # Use Any to avoid type checking issues with DRF spectacular's dynamic serializer creation
+    fields: Dict[str, Any] = {
         'responseCode': serializers.CharField(default="00", help_text="Response code"),
         'responseDescription': serializers.CharField(default=description, help_text="Response description"),
     }
