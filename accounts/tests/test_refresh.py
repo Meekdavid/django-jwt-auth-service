@@ -3,11 +3,13 @@ Comprehensive tests for JWT token refresh functionality.
 Tests both happy path and edge cases for the token refresh endpoint.
 """
 import pytest
+from typing import Any, Dict
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
+from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from accounts.tests.factories import UserFactory, TestData
@@ -27,6 +29,10 @@ class TokenRefreshTestCase(APITestCase):
         self.user = UserFactory()
         self.refresh_token = RefreshToken.for_user(self.user)
 
+    def _get_response_data(self, response) -> Dict[str, Any]:  # type: ignore
+        """Helper method to safely access response data with type annotation."""
+        return response.data  # type: ignore
+
     def test_successful_token_refresh(self):
         """Test successful token refresh with valid refresh token."""
         refresh_data = {'refresh': str(self.refresh_token)}
@@ -34,16 +40,17 @@ class TokenRefreshTestCase(APITestCase):
         response = self.client.post(self.refresh_url, refresh_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['responseCode'], '00')
-        self.assertIn('Token refreshed successfully', response.data['responseDescription'])
+        response_data = self._get_response_data(response)
+        self.assertEqual(response_data['responseCode'], '00')
+        self.assertIn('Token refreshed successfully', response_data['responseDescription'])
         
         # Check new tokens are returned
-        self.assertIn('access', response.data['data'])
-        self.assertIn('refresh', response.data['data'])
+        self.assertIn('access', response_data['data'])
+        self.assertIn('refresh', response_data['data'])
         
         # Verify tokens are valid JWT format
-        new_access = response.data['data']['access']
-        new_refresh = response.data['data']['refresh']
+        new_access = response_data['data']['access']
+        new_refresh = response_data['data']['refresh']
         self.assertTrue(new_access.count('.') == 2)
         self.assertTrue(new_refresh.count('.') == 2)
         
@@ -57,8 +64,9 @@ class TokenRefreshTestCase(APITestCase):
         response = self.client.post(self.refresh_url, refresh_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertEqual(response.data['responseCode'], '09')
-        self.assertIn('Invalid refresh token', response.data['responseDescription'])
+        response_data = self._get_response_data(response)
+        self.assertEqual(response_data['responseCode'], '09')
+        self.assertIn('Invalid refresh token', response_data['responseDescription'])
 
     def test_refresh_with_expired_token(self):
         """Test refresh fails with expired refresh token."""
@@ -72,7 +80,8 @@ class TokenRefreshTestCase(APITestCase):
             response = self.client.post(self.refresh_url, refresh_data, format='json')
             
             self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-            self.assertEqual(response.data['responseCode'], '09')
+            response_data = self._get_response_data(response)
+            self.assertEqual(response_data['responseCode'], '09')
 
     def test_refresh_with_blacklisted_token(self):
         """Test refresh fails with blacklisted refresh token."""
@@ -84,14 +93,16 @@ class TokenRefreshTestCase(APITestCase):
         # Try to use the same token again (should be blacklisted)
         second_response = self.client.post(self.refresh_url, refresh_data, format='json')
         self.assertEqual(second_response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertEqual(second_response.data['responseCode'], '09')
+        second_response_data = self._get_response_data(second_response)
+        self.assertEqual(second_response_data['responseCode'], '09')
 
     def test_refresh_with_missing_token(self):
         """Test refresh fails when refresh token is missing."""
         response = self.client.post(self.refresh_url, {}, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['responseCode'], '07')
+        response_data = self._get_response_data(response)
+        self.assertEqual(response_data['responseCode'], '07')
 
     def test_refresh_with_empty_token(self):
         """Test refresh fails with empty refresh token."""
@@ -100,7 +111,8 @@ class TokenRefreshTestCase(APITestCase):
         response = self.client.post(self.refresh_url, refresh_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data['responseCode'], '07')
+        response_data = self._get_response_data(response)
+        self.assertEqual(response_data['responseCode'], '07')
 
     def test_refresh_with_malformed_token(self):
         """Test refresh fails with malformed JWT token."""
@@ -126,12 +138,13 @@ class TokenRefreshTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
         # Check response structure
-        self.assertIn('responseCode', response.data)
-        self.assertIn('responseDescription', response.data)
-        self.assertIn('data', response.data)
+        response_data = self._get_response_data(response)
+        self.assertIn('responseCode', response_data)
+        self.assertIn('responseDescription', response_data)
+        self.assertIn('data', response_data)
         
         # Check token data structure
-        token_data = response.data['data']
+        token_data = response_data['data']
         self.assertIn('access', token_data)
         self.assertIn('refresh', token_data)
 
@@ -144,7 +157,8 @@ class TokenRefreshTestCase(APITestCase):
         response1 = self.client.post(self.refresh_url, refresh_data, format='json')
         self.assertEqual(response1.status_code, status.HTTP_200_OK)
         
-        new_refresh_token = response1.data['data']['refresh']
+        response1_data = self._get_response_data(response1)
+        new_refresh_token = response1_data['data']['refresh']
         
         # Use new refresh token
         refresh_data = {'refresh': new_refresh_token}

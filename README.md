@@ -64,6 +64,61 @@ curl -X POST https://web-production-46466.up.railway.app/api/auth/register/ \
 - **Documentation**: drf-spectacular + drf-yasg
 - **Rate Limiting**: django-ratelimit + custom throttles
 
+## 📁 Project Structure
+
+```
+auth_service/
+├── 📱 accounts/                 # Authentication Django App
+│   ├── helpers/                 # OpenAPI schemas & decorators
+│   ├── migrations/              # Database migrations
+│   ├── management/commands/     # Custom Django commands
+│   └── tests/                   # All tests (unit & integration)
+│       ├── test_*.py           # Authentication unit tests
+│       ├── test_rate_limiting.py # Rate limiting integration tests
+│       ├── pytest.ini          # Test configuration
+│       └── README.md           # Testing documentation
+├── 🔧 auth_service/            # Main Django Project
+│   ├── settings/               # Environment-specific settings
+│   ├── utils/                  # Shared utilities (throttles, response helpers)
+│   ├── 🚀 deployment/         # Deployment configurations
+│   │   ├── Dockerfile          # Docker container setup
+│   │   ├── docker-compose.yml  # Multi-service orchestration
+│   │   ├── DEPLOYMENT.md       # Deployment documentation
+│   │   ├── DOCKER.md          # Docker-specific guide
+│   │   ├── Procfile           # Heroku deployment
+│   │   ├── railway.json       # Railway.app config
+│   │   ├── nixpacks.toml      # Nixpacks build config
+│   │   └── runtime.txt        # Python version specification
+│   ├── 🛠️ scripts/            # Automation and build scripts
+│   │   ├── Makefile           # Build automation
+│   │   ├── start.sh           # Production startup script
+│   │   ├── docker-validate.sh # Docker validation (Unix)
+│   │   └── docker-validate.bat # Docker validation (Windows)
+│   ├── 🔧 config/             # Additional configurations
+│   └── 🐳 docker/             # Docker-specific files
+│       └── postgres/init.sql  # Database initialization
+├── 📄 manage.py               # Django management script
+├── 📋 requirements.txt        # Python dependencies
+└── 📖 README.md              # Project documentation
+```
+
+### 🗂️ Clean Two-Folder Architecture
+
+The project now follows a **clean two-main-folder structure**:
+
+#### 📱 **`accounts/`** - Authentication App
+- All authentication-related code and functionality
+- Tests for authentication features
+- App-specific helpers and management commands
+
+#### 🔧 **`auth_service/`** - Main Project  
+- Django project configuration and settings
+- Deployment configurations and scripts
+- Project-wide utilities and infrastructure
+- Docker and automation tools
+
+This structure provides clear separation between **application logic** (`accounts/`) and **project infrastructure** (`auth_service/`), making the codebase more maintainable and easier to navigate.
+
 ## 📋 API Endpoints
 
 ### 🔐 Authentication Endpoints

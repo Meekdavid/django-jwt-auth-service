@@ -3,11 +3,13 @@ Comprehensive tests for user login functionality.
 Tests both happy path and edge cases for the login endpoint.
 """
 import pytest
+from typing import Any, Dict
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
+from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.tests.factories import UserFactory, InactiveUserFactory, TestData
 
@@ -24,6 +26,10 @@ class UserLoginTestCase(APITestCase):
         self.password = TestData.VALID_PASSWORD
         self.user = UserFactory(password=self.password)
 
+    def _get_response_data(self, response) -> Dict[str, Any]:  # type: ignore
+        """Helper method to safely access response data with type annotation."""
+        return response.data  # type: ignore
+
     def test_successful_login(self):
         """Test successful login with valid credentials."""
         login_data = {
@@ -34,16 +40,17 @@ class UserLoginTestCase(APITestCase):
         response = self.client.post(self.login_url, login_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['responseCode'], '00')
-        self.assertIn('User logged in successfully', response.data['responseDescription'])
+        response_data = self._get_response_data(response)
+        self.assertEqual(response_data['responseCode'], '00')
+        self.assertIn('User logged in successfully', response_data['responseDescription'])
         
         # Check JWT tokens are returned
-        self.assertIn('access', response.data['data'])
-        self.assertIn('refresh', response.data['data'])
+        self.assertIn('access', response_data['data'])
+        self.assertIn('refresh', response_data['data'])
         
         # Verify tokens are valid JWT format
-        access_token = response.data['data']['access']
-        refresh_token = response.data['data']['refresh']
+        access_token = response_data['data']['access']
+        refresh_token = response_data['data']['refresh']
         self.assertTrue(access_token.count('.') == 2)  # JWT has 3 parts separated by dots
         self.assertTrue(refresh_token.count('.') == 2)
 
@@ -57,8 +64,9 @@ class UserLoginTestCase(APITestCase):
         response = self.client.post(self.login_url, login_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertEqual(response.data['responseCode'], '08')
-        self.assertIn('Invalid credentials', response.data['responseDescription'])
+        response_data = self._get_response_data(response)
+        self.assertEqual(response_data['responseCode'], '08')
+        self.assertIn('Invalid credentials', response_data['responseDescription'])
 
     def test_login_with_invalid_password(self):
         """Test login fails with wrong password."""
@@ -70,8 +78,9 @@ class UserLoginTestCase(APITestCase):
         response = self.client.post(self.login_url, login_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertEqual(response.data['responseCode'], '08')
-        self.assertIn('Invalid credentials', response.data['responseDescription'])
+        response_data = self._get_response_data(response)
+        self.assertEqual(response_data['responseCode'], '08')
+        self.assertIn('Invalid credentials', response_data['responseDescription'])
 
     def test_login_with_inactive_user(self):
         """Test login fails for inactive user account."""
@@ -84,7 +93,8 @@ class UserLoginTestCase(APITestCase):
         response = self.client.post(self.login_url, login_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertEqual(response.data['responseCode'], '08')
+        response_data = self._get_response_data(response)
+        self.assertEqual(response_data['responseCode'], '08')
 
     def test_login_with_missing_fields(self):
         """Test login fails when required fields are missing."""
@@ -122,7 +132,8 @@ class UserLoginTestCase(APITestCase):
         response = self.client.post(self.login_url, login_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['responseCode'], '00')
+        response_data = self._get_response_data(response)
+        self.assertEqual(response_data['responseCode'], '00')
 
     def test_login_with_whitespace_email(self):
         """Test login handles email with whitespace."""
@@ -134,7 +145,8 @@ class UserLoginTestCase(APITestCase):
         response = self.client.post(self.login_url, login_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['responseCode'], '00')
+        response_data = self._get_response_data(response)
+        self.assertEqual(response_data['responseCode'], '00')
 
     def test_login_response_structure(self):
         """Test login response has correct structure."""
@@ -148,12 +160,13 @@ class UserLoginTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         
         # Check response structure
-        self.assertIn('responseCode', response.data)
-        self.assertIn('responseDescription', response.data)
-        self.assertIn('data', response.data)
+        response_data = self._get_response_data(response)
+        self.assertIn('responseCode', response_data)
+        self.assertIn('responseDescription', response_data)
+        self.assertIn('data', response_data)
         
         # Check token data structure
-        token_data = response.data['data']
+        token_data = response_data['data']
         self.assertIn('access', token_data)
         self.assertIn('refresh', token_data)
         

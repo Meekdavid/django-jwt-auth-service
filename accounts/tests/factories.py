@@ -4,8 +4,11 @@ These factories help create consistent test data for all authentication tests.
 """
 import factory
 from factory.django import DjangoModelFactory
+from factory.declarations import Sequence, LazyAttribute
+from factory.helpers import post_generation
 from django.contrib.auth import get_user_model
 from faker import Faker
+from typing import Any
 
 User = get_user_model()
 fake = Faker()
@@ -18,21 +21,21 @@ class UserFactory(DjangoModelFactory):
         model = User
         django_get_or_create = ('email',)
     
-    email = factory.Sequence(lambda n: f"testuser{n}@example.com")
-    full_name = factory.LazyAttribute(lambda obj: fake.name())
+    email = Sequence(lambda n: f"testuser{n}@example.com")
+    full_name = LazyAttribute(lambda obj: fake.name())
     is_active = True
     is_staff = False
     is_superuser = False
 
-    @factory.post_generation
-    def password(self, create, extracted, **kwargs):
+    @post_generation
+    def password(self, create: bool, extracted: Any, **kwargs: Any) -> None:
         """Set password for the user."""
         if not create:
             return
         
         password = extracted or 'testpass123'
-        self.set_password(password)
-        self.save()
+        self.set_password(password)  # type: ignore[attr-defined]
+        self.save()  # type: ignore[attr-defined]
 
 
 class AdminUserFactory(UserFactory):
@@ -40,14 +43,14 @@ class AdminUserFactory(UserFactory):
     
     is_staff = True
     is_superuser = True
-    email = factory.Sequence(lambda n: f"admin{n}@example.com")
+    email = Sequence(lambda n: f"admin{n}@example.com")
 
 
 class InactiveUserFactory(UserFactory):
     """Factory for creating inactive User instances."""
     
     is_active = False
-    email = factory.Sequence(lambda n: f"inactive{n}@example.com")
+    email = Sequence(lambda n: f"inactive{n}@example.com")
 
 
 # Common test data constants

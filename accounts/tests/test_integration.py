@@ -2,12 +2,14 @@
 Integration tests for complete authentication workflows.
 Tests end-to-end scenarios combining multiple endpoints.
 """
+from typing import Any, Dict
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from rest_framework.test import APITestCase, APIClient
 from rest_framework import status
+from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from accounts.tests.factories import UserFactory, TestData
 from auth_service.utils.password_reset_service import PasswordResetService
@@ -37,14 +39,20 @@ class AuthenticationWorkflowTestCase(APITestCase):
         # Clear cache before each test
         cache.clear()
 
+    def _get_response_data(self, response) -> Dict[str, Any]:  # type: ignore
+        """Helper method to safely access response data with type annotation."""
+        return response.data  # type: ignore
+
     def test_complete_registration_to_login_workflow(self):
         """Test complete workflow from registration to successful login."""
         # Step 1: Register new user
         response = self.client.post(self.register_url, self.user_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['responseCode'], '00')
         
-        registered_user_id = response.data['data']['id']
+        response_data = self._get_response_data(response)
+        self.assertEqual(response_data['responseCode'], '00')
+        
+        registered_user_id = response_data['data']['id']
         
         # Step 2: Login with registered credentials
         login_data = {
@@ -54,15 +62,16 @@ class AuthenticationWorkflowTestCase(APITestCase):
         response = self.client.post(self.login_url, login_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['responseCode'], '00')
+        response_data = self._get_response_data(response)
+        self.assertEqual(response_data['responseCode'], '00')
         
         # Verify user data matches
-        # self.assertEqual(response.data['data']['user']['id'], registered_user_id)
-        # self.assertEqual(response.data['data']['user']['email'], self.user_data['email'])
+        # self.assertEqual(response_data['data']['user']['id'], registered_user_id)
+        # self.assertEqual(response_data['data']['user']['email'], self.user_data['email'])
         
         # Verify tokens are present
-        self.assertIn('access', response.data['data'])
-        self.assertIn('refresh', response.data['data'])
+        self.assertIn('access', response_data['data'])
+        self.assertIn('refresh', response_data['data'])
 
     def test_login_refresh_logout_workflow(self):
         """Test complete session management workflow."""
@@ -72,21 +81,23 @@ class AuthenticationWorkflowTestCase(APITestCase):
         response = self.client.post(self.login_url, login_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        access_token = response.data['data']['access']
-        refresh_token = response.data['data']['refresh']
+        response_data = self._get_response_data(response)
+        access_token = response_data['data']['access']
+        refresh_token = response_data['data']['refresh']
         
         # Step 1: Use access token for authenticated request
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')  # type: ignore
         
         # Step 2: Refresh tokens
         refresh_data = {'refresh': refresh_token}
         response = self.client.post(self.refresh_url, refresh_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['responseCode'], '00')
+        response_data = self._get_response_data(response)
+        self.assertEqual(response_data['responseCode'], '00')
         
-        new_access_token = response.data['data']['access']
-        new_refresh_token = response.data['data']['refresh']
+        new_access_token = response_data['data']['access']
+        new_refresh_token = response_data['data']['refresh']
         
         # Verify new tokens are different
         self.assertNotEqual(access_token, new_access_token)
@@ -97,7 +108,8 @@ class AuthenticationWorkflowTestCase(APITestCase):
         response = self.client.post(self.logout_url, logout_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['responseCode'], '00')
+        response_data = self._get_response_data(response)
+        self.assertEqual(response_data['responseCode'], '00')
         
         # Step 4: Try to use refresh token after logout (should fail)
         response = self.client.post(self.refresh_url, {'refresh': new_refresh_token}, format='json')
@@ -120,7 +132,8 @@ class AuthenticationWorkflowTestCase(APITestCase):
         response = self.client.post(self.forgot_password_url, forgot_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        reset_token = response.data['data']['token']
+        response_data = self._get_response_data(response)
+        reset_token = response_data['data']['token']
         
         # Step 3: Reset password with token
         reset_data = {
@@ -131,7 +144,8 @@ class AuthenticationWorkflowTestCase(APITestCase):
         response = self.client.post(self.reset_password_url, reset_data, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['responseCode'], '00')
+        response_data = self._get_response_data(response)
+        self.assertEqual(response_data['responseCode'], '00')
         
         # Step 4: Verify old password no longer works
         login_data = {'email': user.email, 'password': old_password}
@@ -142,7 +156,8 @@ class AuthenticationWorkflowTestCase(APITestCase):
         login_data = {'email': user.email, 'password': new_password}
         response = self.client.post(self.login_url, login_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['responseCode'], '00')
+        response_data = self._get_response_data(response)
+        self.assertEqual(response_data['responseCode'], '00')
 
     def test_token_blacklisting_across_sessions(self):
         """Test token blacklisting behavior across multiple sessions."""
@@ -151,10 +166,12 @@ class AuthenticationWorkflowTestCase(APITestCase):
         
         # Create multiple sessions
         session1_response = self.client.post(self.login_url, login_data, format='json')
-        session1_refresh = session1_response.data['data']['refresh']
+        session1_data = self._get_response_data(session1_response)
+        session1_refresh = session1_data['data']['refresh']
         
         session2_response = self.client.post(self.login_url, login_data, format='json')
-        session2_refresh = session2_response.data['data']['refresh']
+        session2_data = self._get_response_data(session2_response)
+        session2_refresh = session2_data['data']['refresh']
         
         # Verify both sessions work
         self.assertEqual(session1_response.status_code, status.HTTP_200_OK)
@@ -209,8 +226,8 @@ class AuthenticationWorkflowTestCase(APITestCase):
             responses.append(response)
         
         # All sessions should have different tokens
-        access_tokens = [r.data['data']['access'] for r in responses]
-        refresh_tokens = [r.data['data']['refresh'] for r in responses]
+        access_tokens = [self._get_response_data(r)['data']['access'] for r in responses]
+        refresh_tokens = [self._get_response_data(r)['data']['refresh'] for r in responses]
         
         self.assertEqual(len(set(access_tokens)), 3)  # All unique
         self.assertEqual(len(set(refresh_tokens)), 3)  # All unique
@@ -226,21 +243,22 @@ class AuthenticationWorkflowTestCase(APITestCase):
         login_data = {'email': user.email, 'password': TestData.DEFAULT_PASSWORD}
         response = self.client.post(self.login_url, login_data, format='json')
         
-        access_token = response.data['data']['access']
+        response_data = self._get_response_data(response)
+        access_token = response_data['data']['access']
         
         # Standard Bearer token format
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {access_token}')  # type: ignore
         # Test with an endpoint that requires authentication (refresh endpoint works)
-        test_response = self.client.post(self.refresh_url, {'refresh': response.data['data']['refresh_token']}, format='json')
+        test_response = self.client.post(self.refresh_url, {'refresh': response_data['data']['refresh']}, format='json')
         self.assertEqual(test_response.status_code, status.HTTP_200_OK)
         
         # Invalid header formats should fail
-        self.client.credentials(HTTP_AUTHORIZATION=f'Token {access_token}')
-        test_response = self.client.post(self.refresh_url, {'refresh': response.data['data']['refresh_token']}, format='json')
+        self.client.credentials(HTTP_AUTHORIZATION=f'Token {access_token}')  # type: ignore
+        test_response = self.client.post(self.refresh_url, {'refresh': response_data['data']['refresh']}, format='json')
         # This might still work depending on DRF configuration, but good to test
         
         # No authorization header
-        self.client.credentials()
+        self.client.credentials()  # type: ignore
         # Some endpoints might not require auth, so we need to test with protected endpoint
 
     def test_rate_limiting_integration(self):
@@ -264,7 +282,8 @@ class AuthenticationWorkflowTestCase(APITestCase):
         """Test user data consistency across different endpoints."""
         # Register user
         response = self.client.post(self.register_url, self.user_data, format='json')
-        registered_data = response.data['data']
+        response_data = self._get_response_data(response)
+        registered_data = response_data['data']
         
         # Login and compare user data
         login_data = {
@@ -272,7 +291,8 @@ class AuthenticationWorkflowTestCase(APITestCase):
             'password': self.user_data['password']
         }
         response = self.client.post(self.login_url, login_data, format='json')
-        login_user_data = response.data['data']['user']
+        response_data = self._get_response_data(response)
+        login_user_data = response_data['data']['user']
         
         # Compare key fields
         self.assertEqual(registered_data['user_id'], login_user_data['id'])
@@ -292,6 +312,10 @@ class SecurityTestCase(APITestCase):
         self.logout_url = reverse('auth-logout')
         
         cache.clear()
+
+    def _get_response_data(self, response) -> Dict[str, Any]:  # type: ignore
+        """Helper method to safely access response data with type annotation."""
+        return response.data  # type: ignore
 
     def test_sql_injection_attempts(self):
         """Test protection against SQL injection attempts."""
@@ -316,7 +340,8 @@ class SecurityTestCase(APITestCase):
         response = self.client.post(self.login_url, login_data, format='json')
         
         # Response should not contain unescaped script tags
-        response_content = json.dumps(response.data)
+        response_data = self._get_response_data(response)
+        response_content = json.dumps(response_data)
         self.assertNotIn('<script>', response_content)
 
     def test_timing_attack_resistance(self):
@@ -338,7 +363,9 @@ class SecurityTestCase(APITestCase):
         
         # Both should return similar response codes and structure
         self.assertEqual(response1.status_code, response2.status_code)
-        self.assertEqual(response1.data['responseCode'], response2.data['responseCode'])
+        response1_data = self._get_response_data(response1)
+        response2_data = self._get_response_data(response2)
+        self.assertEqual(response1_data['responseCode'], response2_data['responseCode'])
 
     def test_token_leakage_prevention(self):
         """Test that tokens are not leaked in error messages."""
@@ -347,7 +374,8 @@ class SecurityTestCase(APITestCase):
         # Get valid tokens
         login_data = {'email': user.email, 'password': TestData.DEFAULT_PASSWORD}
         response = self.client.post(self.login_url, login_data, format='json')
-        refresh_token = response.data['data']['refresh_token']
+        response_data = self._get_response_data(response)
+        refresh_token = response_data['data']['refresh']
         
         # Logout to blacklist the token
         self.client.post(self.logout_url, {'refresh': refresh_token}, format='json')
@@ -356,5 +384,6 @@ class SecurityTestCase(APITestCase):
         response = self.client.post(self.refresh_url, {'refresh': refresh_token}, format='json')
         
         # Error message should not contain the actual token
-        response_content = json.dumps(response.data)
+        response_data = self._get_response_data(response)
+        response_content = json.dumps(response_data)
         self.assertNotIn(refresh_token, response_content)

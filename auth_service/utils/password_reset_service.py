@@ -2,7 +2,7 @@ import secrets
 import redis
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from typing import Optional
+from typing import Optional, Union
 
 User = get_user_model()
 
@@ -44,12 +44,12 @@ class PasswordResetService:
         self.redis_client.setex(
             name=redis_key,
             time=self.token_ttl,
-            value=str(user.id)
+            value=str(user.id)  # type: ignore
         )
         
         return token
     
-    def verify_and_consume_token(self, token: str) -> Optional[User]:
+    def verify_and_consume_token(self, token: str) -> Optional[Union[User, None]]:  # type: ignore
         """
         Verify password reset token and return associated user.
         Token is consumed (deleted) upon successful verification.
@@ -63,7 +63,7 @@ class PasswordResetService:
         redis_key = f"{self.token_prefix}{token}"
         
         # Get user ID from Redis
-        user_id = self.redis_client.get(redis_key)
+        user_id: bytes = self.redis_client.get(redis_key)  # type: ignore
         
         if not user_id:
             # Token doesn't exist or has expired
@@ -100,7 +100,7 @@ class PasswordResetService:
         
         # Find all tokens and check if they belong to this user
         for key in self.redis_client.scan_iter(match=pattern):
-            stored_user_id = self.redis_client.get(key)
+            stored_user_id: bytes = self.redis_client.get(key)  # type: ignore
             if stored_user_id and int(stored_user_id.decode()) == user_id:
                 self.redis_client.delete(key)
                 deleted_count += 1
@@ -118,5 +118,5 @@ class PasswordResetService:
             TTL in seconds, None if token doesn't exist
         """
         redis_key = f"{self.token_prefix}{token}"
-        ttl = self.redis_client.ttl(redis_key)
+        ttl: int = self.redis_client.ttl(redis_key)  # type: ignore
         return ttl if ttl > 0 else None

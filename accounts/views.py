@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from rest_framework.throttling import AnonRateThrottle
+from typing import Dict, Any
 
 from accounts.serializers import (
     RegisterRequestSerializer, RegisterSerializer,
@@ -72,7 +73,8 @@ class AuthViewSet(ViewSet):
         # If you enabled blacklist in SIMPLE_JWT settings and added app to INSTALLED_APPS,
         # you can blacklist the refresh token here.
         try:
-            token = RefreshToken(ser.validated_data["refresh"])
+            validated_data: Dict[str, Any] = ser.validated_data  # type: ignore
+            token = RefreshToken(validated_data["refresh"])
             token.blacklist()  # requires 'rest_framework_simplejwt.token_blacklist'
         except Exception:
             # If blacklist not configured, just return OK so client drops token.
@@ -106,7 +108,8 @@ class AuthViewSet(ViewSet):
         if not ser.is_valid():
             return error_response("07", "Invalid input", data=ser.errors, status=400)
         
-        email = ser.validated_data["email"]
+        validated_data: Dict[str, Any] = ser.validated_data  # type: ignore
+        email = validated_data["email"]
         
         try:
             # Initialize password reset service
@@ -146,8 +149,9 @@ class AuthViewSet(ViewSet):
         if not ser.is_valid():
             return error_response("07", "Invalid input", data=ser.errors, status=400)
         
-        token = ser.validated_data["token"]
-        new_password = ser.validated_data["new_password"]
+        validated_data: Dict[str, Any] = ser.validated_data  # type: ignore
+        token = validated_data["token"]
+        new_password = validated_data["new_password"]
         
         try:
             # Initialize password reset service
