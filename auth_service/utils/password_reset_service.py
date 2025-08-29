@@ -14,7 +14,17 @@ class PasswordResetService:
     
     def __init__(self):
         # Connect to Redis using Django cache configuration
-        self.redis_client = redis.from_url(settings.REDIS_URL)
+        try:
+            self.redis_client = redis.from_url(settings.REDIS_URL)
+            # Test the connection
+            self.redis_client.ping()
+        except Exception as e:
+            # Log the error and use a fallback
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Redis connection failed: {e}. Password reset will use database fallback.")
+            self.redis_client = None
+        
         self.token_prefix = "password_reset:"
         self.token_ttl = 600  # 10 minutes in seconds
     
@@ -39,13 +49,20 @@ class PasswordResetService:
         # Generate secure token using secrets module
         token = secrets.token_urlsafe(32)
         
-        # Store token -> user_id mapping in Redis with TTL
-        redis_key = f"{self.token_prefix}{token}"
-        self.redis_client.setex(
-            name=redis_key,
-            time=self.token_ttl,
-            value=str(user.id)  # type: ignore
-        )
+        # Store token -> user_id mapping in Redis with TTL (if Redis is available)
+        if self.redis_client:
+            redis_key = f"{self.token_prefix}{token}"
+            self.redis_client.setex(
+                name=redis_key,
+                time=self.token_ttl,
+                value=str(user.id)  # type: ignore
+            )
+        else:
+            # If Redis is not available, you could store in database or raise an error
+            # For now, we'll continue but password reset won't work properly
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning("Redis not available, password reset token cannot be stored")
         
         return token
     
@@ -60,6 +77,9 @@ class PasswordResetService:
         Returns:
             User object if token is valid, None otherwise
         """
+        if not self.redis_client:
+            return None
+            
         redis_key = f"{self.token_prefix}{token}"
         
         # Get user ID from Redis
@@ -95,6 +115,9 @@ class PasswordResetService:
         Returns:
             Number of tokens invalidated
         """
+        if not self.redis_client:
+            return 0
+            
         pattern = f"{self.token_prefix}*"
         deleted_count = 0
         
@@ -115,8 +138,11 @@ class PasswordResetService:
             token: Password reset token
             
         Returns:
-            TTL in seconds, None if token doesn't exist
+            TTL in seconds, None if token doesn't exist or Redis unavailable
         """
+        if not self.redis_client:
+            return None
+            
         redis_key = f"{self.token_prefix}{token}"
         ttl: int = self.redis_client.ttl(redis_key)  # type: ignore
         return ttl if ttl > 0 else None

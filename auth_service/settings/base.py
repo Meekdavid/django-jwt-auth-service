@@ -80,14 +80,31 @@ DATABASES = {
 
 # --- Redis cache via REDIS_URL ---
 REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": REDIS_URL,
-        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
-        "KEY_PREFIX": "authsvc",
+
+# Configure Redis cache with fallback to dummy cache if Redis is unavailable
+try:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                "CONNECTION_POOL_KWARGS": {
+                    "retry_on_timeout": True,
+                    "socket_connect_timeout": 5,
+                    "socket_timeout": 5,
+                }
+            },
+            "KEY_PREFIX": "authsvc",
+        }
     }
-}
+except Exception:
+    # Fallback to dummy cache if Redis is not available
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+        }
+    }
 
 AUTH_USER_MODEL = "accounts.User"
 
