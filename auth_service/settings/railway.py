@@ -64,9 +64,14 @@ TEMPLATES = [
     }
 ]
 
+# WSGI application with PORT handling
 WSGI_APPLICATION = "auth_service.wsgi.application"
 
-# Database
+# Railway PORT configuration
+RAILWAY_PORT = os.environ.get("PORT", "8000")
+print(f"🚂 Railway PORT detected: {RAILWAY_PORT}")
+
+# Logging
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://postgres:tVmkcXvVXeaTjVeWaSoCJXQPaQdcfDDO@yamanote.proxy.rlwy.net:19661/railway")
 DATABASES = {
     "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
