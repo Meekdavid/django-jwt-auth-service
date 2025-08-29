@@ -37,7 +37,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 
     "rest_framework",
-    "core",
     "accounts.apps.AccountsConfig",
     "drf_yasg",  # Keep for backward compatibility
     "drf_spectacular",  # New API documentation
