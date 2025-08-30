@@ -28,6 +28,9 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Copy project files
 COPY . /app/
 
+# Make entrypoint script executable
+RUN chmod +x /app/entrypoint.sh
+
 # Create staticfiles directory
 RUN mkdir -p /app/staticfiles
 
@@ -46,5 +49,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD bash -lc 'curl -f http://localhost:${PORT:-8000}/healthz || exit 1'
 
-# Default command using exec form with explicit shell to ensure proper $PORT expansion
-CMD ["/bin/bash", "-c", "exec gunicorn auth_service.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --timeout 60 --log-level info --access-logfile - --error-logfile -"]
+# Use entrypoint script to handle PORT expansion properly
+CMD ["/app/entrypoint.sh"]
