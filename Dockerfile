@@ -28,7 +28,7 @@ COPY . /app/
 
 # Create staticfiles directory and collect static files
 RUN mkdir -p /app/staticfiles
-RUN python manage.py collectstatic --noinput --settings=auth_service.settings.prod
+RUN python manage.py collectstatic --noinput --settings=auth_service.settings.railway
 
 # Create a non-root user
 RUN adduser --disabled-password --gecos '' appuser \
