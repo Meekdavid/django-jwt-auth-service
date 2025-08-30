@@ -6,13 +6,17 @@ Each service class encapsulates specific business operations to keep views clean
 """
 from typing import Dict, Any, Optional
 import jwt
+import logging
+import traceback
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError, transaction
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.exceptions import TokenError
 from auth_service.utils.password_reset_service import PasswordResetService
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 class UserRegistrationService:
@@ -38,13 +42,42 @@ class UserRegistrationService:
         Note: This pattern shows how to extract creation logic from serializers
         when additional business rules need to be applied during user creation.
         """
-        # Extract password to handle separately as required by Django's create_user method
-        password = validated_data.pop("password")
-        
-        # Create user using Django's built-in method which handles password hashing
-        user = User.objects.create_user(password=password, **validated_data)
-        
-        return user
+        try:
+            logger.info(f"Starting user registration process with data: {validated_data}")
+            
+            # Validate required fields
+            required_fields = ['email', 'password']
+            for field in required_fields:
+                if field not in validated_data:
+                    logger.error(f"Missing required field: {field}")
+                    raise ValueError(f"Missing required field: {field}")
+            
+            # Extract password to handle separately as required by Django's create_user method
+            password = validated_data.pop("password")
+            email = validated_data.get("email")
+            
+            logger.info(f"Creating user with email: {email}")
+            
+            # Check if user already exists
+            if User.objects.filter(email=email).exists():
+                logger.warning(f"User registration failed: email {email} already exists")
+                raise ValueError(f"User with email {email} already exists")
+            
+            # Create user using Django's built-in method which handles password hashing
+            with transaction.atomic():
+                user = User.objects.create_user(password=password, **validated_data)
+                logger.info(f"User created successfully with email: {user.email}")
+            
+            return user
+            
+        except IntegrityError as e:
+            logger.error(f"Database integrity error during user registration: {str(e)}")
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            raise ValueError(f"User with this email already exists: {str(e)}")
+        except Exception as e:
+            logger.error(f"Unexpected error during user registration: {str(e)}")
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            raise
 
 
 class AuthenticationService:

@@ -5,6 +5,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework import status
 from rest_framework.throttling import AnonRateThrottle
 from typing import Dict, Any
+import logging
+import traceback
 
 from accounts.serializers import (
     RegisterRequestSerializer, RegisterSerializer,
@@ -28,6 +30,9 @@ from accounts.helpers.spectacular_schemas import (
     forgot_password_spectacular_schema, reset_password_spectacular_schema
 )
 
+# Configure logger
+logger = logging.getLogger(__name__)
+
 class AuthViewSet(ViewSet):
     permission_classes = [AllowAny]
 
@@ -41,22 +46,34 @@ class AuthViewSet(ViewSet):
         This endpoint demonstrates clean separation of concerns where the view
         handles HTTP protocol concerns while business logic resides in service classes.
         """
-        # Step 1: Validate the incoming request data using serializer
-        ser = RegisterRequestSerializer(data=request.data)
-        if not ser.is_valid():
-            return error_response("07", "Invalid input", data=ser.errors, status=400)
-        
-        # Step 2: Delegate user creation to the service layer
-        validated_data = ser.validated_data
-        if not isinstance(validated_data, dict):
-            return error_response("07", "Invalid data format", status=400)
+        try:
+            logger.info(f"Registration attempt for request data: {request.data}")
             
-        user = UserRegistrationService.register_user(validated_data)
-        
-        # Step 3: Format the response using output serializer
-        user_data = RegisterSerializer(user).data
-        
-        return success_response(user_data, "User registered successfully", status=201)
+            # Step 1: Validate the incoming request data using serializer
+            ser = RegisterRequestSerializer(data=request.data)
+            if not ser.is_valid():
+                logger.warning(f"Registration validation failed: {ser.errors}")
+                return error_response("07", "Invalid input", data=ser.errors, status=400)
+            
+            # Step 2: Delegate user creation to the service layer
+            validated_data = ser.validated_data
+            if not isinstance(validated_data, dict):
+                logger.error("Registration: validated_data is not a dictionary")
+                return error_response("07", "Invalid data format", status=400)
+            
+            logger.info(f"Calling UserRegistrationService.register_user with data: {validated_data}")
+            user = UserRegistrationService.register_user(validated_data)
+            
+            # Step 3: Format the response using output serializer
+            user_data = RegisterSerializer(user).data
+            logger.info(f"User registered successfully: {user.email}")
+            
+            return success_response(user_data, "User registered successfully", status=201)
+            
+        except Exception as e:
+            logger.error(f"Registration failed with exception: {str(e)}")
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return error_response("10", "Registration failed", data={"detail": str(e), "traceback": traceback.format_exc()}, status=500)
 
     @login_user_spectacular_schema()  # New drf-spectacular
     @login_user_schema()  # Legacy drf-yasg
