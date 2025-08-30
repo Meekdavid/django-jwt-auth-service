@@ -1,13 +1,12 @@
 from .base import *
+import dj_database_url
 
 DEBUG = True
 
-# Override database for local development with SQLite
+# Use PostgreSQL for all environments (remove SQLite dependency)
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://postgres:password@localhost:5432/auth_service_dev")
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    "default": dj_database_url.parse(DATABASE_URL)
 }
 
 # Override cache for local development with dummy cache

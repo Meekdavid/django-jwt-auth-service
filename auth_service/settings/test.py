@@ -3,7 +3,7 @@ from .base import *
 # Test-specific settings
 DEBUG = False
 
-# Use in-memory database for testing
+# Use in-memory SQLite only for testing (fast and isolated)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
