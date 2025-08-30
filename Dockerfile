@@ -28,9 +28,6 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Copy project files
 COPY . /app/
 
-# Make entrypoint script executable
-RUN chmod +x /app/entrypoint.sh
-
 # Create staticfiles directory
 RUN mkdir -p /app/staticfiles
 
@@ -45,5 +42,5 @@ USER appuser
 # Expose port (using static port since PORT is not available at build time)
 EXPOSE 8000
 
-# Use entrypoint script to handle PORT expansion properly
-CMD ["/app/entrypoint.sh"]
+# Solution 2: Use /bin/bash -c to properly expand $PORT variable
+CMD ["/bin/bash", "-c", "gunicorn auth_service.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --timeout 60 --log-level info --access-logfile - --error-logfile -"]
