@@ -128,6 +128,18 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/hour",  # General anonymous rate limit
+        "user": "1000/hour",  # General authenticated user rate limit
+        "login": "5/min",     # Login attempts per IP/email (5 attempts per minute)
+        "password_reset": "3/min",  # Password reset attempts per IP/email (3 per minute)
+        "auth_critical": "10/hour",  # Critical auth operations (10 per hour)
+        "email": "10/min",    # Email-based throttling fallback
+    },
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 

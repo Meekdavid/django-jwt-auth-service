@@ -38,7 +38,7 @@ class AuthViewSet(ViewSet):
 
     @register_user_spectacular_schema()  # New drf-spectacular
     @register_user_schema()  # Legacy drf-yasg
-    @action(methods=["post"], detail=False, url_path="register", throttle_classes=[AuthCriticalRateThrottle])
+    @action(methods=["post"], detail=False, url_path="register")  # Temporarily disabled throttling for debugging
     def register(self, request):
         """
         Handles user registration by validating input and delegating to service layer
