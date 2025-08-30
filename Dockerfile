@@ -42,9 +42,15 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Health check
+# Health check uses runtime PORT
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/healthz || exit 1
+    CMD bash -lc 'curl -f http://localhost:${PORT:-8000}/healthz || exit 1'
 
-# Default command
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "60", "auth_service.wsgi:application"]
+# Default command (shell form so $PORT expands at runtime)
+CMD bash -lc 'exec gunicorn auth_service.wsgi:application \
+    --bind 0.0.0.0:${PORT:-8000} \
+    --workers ${WEB_CONCURRENCY:-2} \
+    --timeout 60 \
+    --log-level info \
+    --access-logfile - \
+    --error-logfile -'
