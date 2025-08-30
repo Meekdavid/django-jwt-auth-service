@@ -42,12 +42,8 @@ RUN adduser --disabled-password --gecos '' appuser \
     && chown -R appuser:appuser /app
 USER appuser
 
-# Expose port
+# Expose port (using static port since PORT is not available at build time)
 EXPOSE 8000
-
-# Health check uses runtime PORT
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD bash -lc 'curl -f http://localhost:${PORT:-8000}/healthz || exit 1'
 
 # Use entrypoint script to handle PORT expansion properly
 CMD ["/app/entrypoint.sh"]

@@ -1,20 +1,11 @@
 #!/bin/bash
 set -e
 
-# Default PORT to 8000 if not set
-export PORT=${PORT:-8000}
+echo "Starting Django application on port ${PORT:-8000}"
 
-# Validate that PORT is a number
-if ! [[ "$PORT" =~ ^[0-9]+$ ]]; then
-    echo "Error: PORT must be a valid number, got: $PORT"
-    exit 1
-fi
-
-echo "Starting Django application on port $PORT"
-
-# Execute the command with proper port
+# Execute the command with proper port (PORT is available at runtime)
 exec gunicorn auth_service.wsgi:application \
-    --bind "0.0.0.0:$PORT" \
+    --bind "0.0.0.0:${PORT:-8000}" \
     --workers ${WEB_CONCURRENCY:-2} \
     --timeout 60 \
     --log-level info \
