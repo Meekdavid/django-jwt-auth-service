@@ -66,10 +66,45 @@ TEMPLATES = [
 WSGI_APPLICATION = "auth_service.wsgi.application"
 
 # Database
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://postgres:tVmkcXvVXeaTjVeWaSoCJXQPaQdcfDDO@yamanote.proxy.rlwy.net:19661/railway")
-DATABASES = {
-    "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
-}
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+if DATABASE_URL and DATABASE_URL.strip() and "://" in DATABASE_URL:
+    # Use the provided DATABASE_URL if it's valid
+    try:
+        DATABASES = {
+            "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+        }
+    except Exception as e:
+        # Fallback to default configuration if parsing fails
+        print(f"Warning: Failed to parse DATABASE_URL: {e}")
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.postgresql",
+                "NAME": os.environ.get("PGDATABASE", "railway"),
+                "USER": os.environ.get("PGUSER", "postgres"),
+                "PASSWORD": os.environ.get("PGPASSWORD", ""),
+                "HOST": os.environ.get("PGHOST", "localhost"),
+                "PORT": os.environ.get("PGPORT", "5432"),
+                "OPTIONS": {
+                    "connect_timeout": 60,
+                },
+            }
+        }
+else:
+    # Use individual PostgreSQL environment variables
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("PGDATABASE", "railway"),
+            "USER": os.environ.get("PGUSER", "postgres"),
+            "PASSWORD": os.environ.get("PGPASSWORD", ""),
+            "HOST": os.environ.get("PGHOST", "localhost"),
+            "PORT": os.environ.get("PGPORT", "5432"),
+            "OPTIONS": {
+                "connect_timeout": 60,
+            },
+        }
+    }
 
 # Cache
 CACHES = {

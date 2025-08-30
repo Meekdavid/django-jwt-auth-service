@@ -8,6 +8,14 @@ echo "Starting Django application..."
 # Set Django settings module for production
 export DJANGO_SETTINGS_MODULE=auth_service.settings.railway
 
+# Debug environment variables
+echo "Environment variables:"
+echo "DATABASE_URL: ${DATABASE_URL:-'Not set'}"
+echo "PGDATABASE: ${PGDATABASE:-'Not set'}"
+echo "PGUSER: ${PGUSER:-'Not set'}"
+echo "PGHOST: ${PGHOST:-'Not set'}"
+echo "PGPORT: ${PGPORT:-'Not set'}"
+
 # Wait for database to be ready (optional, but good practice)
 echo "Waiting for database to be ready..."
 python manage.py check --database default
