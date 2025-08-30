@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "accounts.apps.AccountsConfig",
     "drf_yasg",  # Keep for backward compatibility
-    "drf_spectacular",  # New API documentation
+    "drf_spectacular",  # API documentation
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
 ]
@@ -194,33 +194,7 @@ SIMPLE_JWT = {
 SPECTACULAR_SETTINGS = {
     "TITLE": "Auth Service API",
     "DESCRIPTION": """
-    **Comprehensive Authentication Service API**
-    
-    This API provides secure authentication and user management functionality with:
-    
-    🔐 **Authentication Features:**
-    - User registration and login
-    - JWT access and refresh tokens
-    - Password reset with Redis-based tokens
-    - Protected endpoint access
-    
-    🛡️ **Security Features:**
-    - Rate limiting on critical endpoints
-    - Token blacklisting and rotation
-    - Password strength validation
-    - Secure token generation
-    
-    📚 **API Features:**
-    - RESTful design principles
-    - Comprehensive error handling
-    - Interactive API documentation
-    - Rate limiting information
-    
-    **Getting Started:**
-    1. Register a new user account
-    2. Login to receive JWT tokens
-    3. Use access token in Authorization header: `Bearer <access_token>`
-    4. Refresh tokens when access token expires
+    **Authentication Service API**
     
     **Rate Limits:**
     - Login: 5 attempts per minute

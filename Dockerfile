@@ -38,5 +38,9 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Use the EXACT working solution from the Railway forum
-CMD ["/bin/bash", "-c", "gunicorn auth_service.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 60 --log-level info --access-logfile - --error-logfile -"]
+# Create startup script that runs migrations and starts the server
+COPY --chown=appuser:appuser start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
+# Use startup script that includes migrations
+CMD ["/app/start.sh"]
