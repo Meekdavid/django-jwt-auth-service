@@ -19,6 +19,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 import logging
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,6 @@ try:
     logger.info("✅ DRF-YASG schema view created successfully")
 except Exception as e:
     logger.error(f"❌ DRF-YASG schema view creation failed: {e}")
-    import traceback
     logger.error(traceback.format_exc())
 
 try:
@@ -83,7 +83,6 @@ try:
     logger.info("✅ URL patterns configured successfully")
 except Exception as e:
     logger.error(f"❌ URL patterns configuration failed: {e}")
-    import traceback
     logger.error(traceback.format_exc())
     # Fallback minimal URL patterns
     urlpatterns = [

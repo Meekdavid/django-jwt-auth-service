@@ -11,8 +11,11 @@ from accounts.serializers import (
     LoginSerializer, LogoutSerializer, RefreshTokenSerializer,
     ForgotPasswordSerializer, ResetPasswordSerializer
 )
+from accounts.services.auth_services import (
+    UserRegistrationService, AuthenticationService, 
+    PasswordResetBusinessService, UserProfileService
+)
 from auth_service.utils.response_utils import success_response, error_response
-from auth_service.utils.password_reset_service import PasswordResetService
 from auth_service.utils.throttles import LoginRateThrottle, PasswordResetRateThrottle, AuthCriticalRateThrottle
 
 from accounts.helpers.openapi_auth_schemas import (
@@ -25,8 +28,6 @@ from accounts.helpers.spectacular_schemas import (
     forgot_password_spectacular_schema, reset_password_spectacular_schema
 )
 
-from rest_framework_simplejwt.tokens import RefreshToken
-
 class AuthViewSet(ViewSet):
     permission_classes = [AllowAny]
 
@@ -34,67 +35,124 @@ class AuthViewSet(ViewSet):
     @register_user_schema()  # Legacy drf-yasg
     @action(methods=["post"], detail=False, url_path="register", throttle_classes=[AuthCriticalRateThrottle])
     def register(self, request):
+        """
+        Handles user registration by validating input and delegating to service layer
+        
+        This endpoint demonstrates clean separation of concerns where the view
+        handles HTTP protocol concerns while business logic resides in service classes.
+        """
+        # Step 1: Validate the incoming request data using serializer
         ser = RegisterRequestSerializer(data=request.data)
         if not ser.is_valid():
             return error_response("07", "Invalid input", data=ser.errors, status=400)
-        user = ser.save()
-        out = RegisterSerializer(user).data
-        return success_response(out, "User registered successfully", status=201)
+        
+        # Step 2: Delegate user creation to the service layer
+        validated_data = ser.validated_data
+        if not isinstance(validated_data, dict):
+            return error_response("07", "Invalid data format", status=400)
+            
+        user = UserRegistrationService.register_user(validated_data)
+        
+        # Step 3: Format the response using output serializer
+        user_data = RegisterSerializer(user).data
+        
+        return success_response(user_data, "User registered successfully", status=201)
 
     @login_user_spectacular_schema()  # New drf-spectacular
     @login_user_schema()  # Legacy drf-yasg
     @action(methods=["post"], detail=False, url_path="login", throttle_classes=[LoginRateThrottle, AnonRateThrottle])
     def login(self, request):
+        """
+        Authenticates user credentials and returns JWT tokens
+        
+        This endpoint shows how to validate credentials through serializers
+        and delegate token generation to the service layer for clean architecture.
+        """
+        # Step 1: Validate credentials using the login serializer
         ser = LoginSerializer(data=request.data)
         if not ser.is_valid():
-            # TokenObtainPairSerializer returns 401 on bad creds
+            # TokenObtainPairSerializer returns 401 on bad credentials
             return error_response("08", "Authentication failed", data=ser.errors, status=401)
-        tokens = ser.validated_data  # {"access": "...", "refresh": "..."}
+        
+        # Step 2: Process authentication through service layer
+        validated_data = ser.validated_data
+        if not isinstance(validated_data, dict):
+            return error_response("08", "Invalid data format", status=400)
+            
+        tokens = AuthenticationService.authenticate_user(validated_data)
+        
         return success_response(tokens, "User logged in successfully", status=200)
 
     @refresh_token_spectacular_schema()  # New drf-spectacular
     @refresh_token_schema()  # Legacy drf-yasg
     @action(methods=["post"], detail=False, url_path="refresh")
     def refresh(self, request):
+        """
+        Refreshes JWT access token using valid refresh token
+        
+        This endpoint demonstrates token refresh workflow using service layer
+        to handle the business logic while keeping the view focused on HTTP concerns.
+        """
+        # Step 1: Validate the refresh token
         ser = RefreshTokenSerializer(data=request.data)
         if not ser.is_valid():
             return error_response("09", "Invalid refresh token", data=ser.errors, status=401)
-        tokens = ser.validated_data  # {"access": "...", "refresh": "..."}
+        
+        # Step 2: Generate new tokens through service layer
+        validated_data = ser.validated_data
+        if not isinstance(validated_data, dict):
+            return error_response("09", "Invalid data format", status=400)
+            
+        tokens = AuthenticationService.refresh_user_token(validated_data)
+        
         return success_response(tokens, "Token refreshed successfully", status=200)
 
     @logout_user_spectacular_schema()  # New drf-spectacular
     @logout_user_schema()  # Legacy drf-yasg
     @action(methods=["post"], detail=False, url_path="logout", permission_classes=[IsAuthenticated])
     def logout(self, request):
+        """
+        Handles user logout by blacklisting the refresh token
+        
+        This endpoint shows how to perform secure logout by delegating
+        token management to the service layer while handling validation in the view.
+        """
+        # Step 1: Validate the refresh token format
         ser = LogoutSerializer(data=request.data)
         if not ser.is_valid():
             return error_response("07", "Invalid input", data=ser.errors, status=400)
 
-        # If you enabled blacklist in SIMPLE_JWT settings and added app to INSTALLED_APPS,
-        # you can blacklist the refresh token here.
-        try:
-            validated_data: Dict[str, Any] = ser.validated_data  # type: ignore
-            token = RefreshToken(validated_data["refresh"])
-            token.blacklist()  # requires 'rest_framework_simplejwt.token_blacklist'
-        except Exception:
-            # If blacklist not configured, just return OK so client drops token.
-            pass
-
-        return success_response({"message": "Logged out"}, "User logged out successfully", status=200)
+        # Step 2: Extract refresh token and delegate logout to service
+        # Type-safe access to validated data after successful validation
+        validated_data = ser.validated_data
+        if not isinstance(validated_data, dict):
+            return error_response("07", "Invalid data format", status=400)
+            
+        refresh_token = validated_data.get("refresh")
+        if not refresh_token:
+            return error_response("07", "Refresh token is required", status=400)
+        
+        # Step 3: Perform logout through service layer
+        logout_successful = AuthenticationService.logout_user(refresh_token)
+        
+        if logout_successful:
+            return success_response({"message": "Logged out"}, "User logged out successfully", status=200)
+        else:
+            return error_response("10", "Logout failed", status=500)
 
     @protected_test_spectacular_schema()  # New drf-spectacular
     @protected_test_schema()  # Legacy drf-yasg
     @action(methods=["get"], detail=False, url_path="protected-test", permission_classes=[IsAuthenticated])
     def protected_test(self, request):
         """
-        Protected test endpoint that requires valid JWT access token
+        Demonstrates protected endpoint access with JWT authentication
+        
+        This endpoint shows how to use service layer to format user data
+        while keeping the view simple and focused on request/response handling.
         """
-        user_data = {
-            "user_id": request.user.id,
-            "email": request.user.email,
-            "full_name": request.user.full_name,
-            "message": "This endpoint requires a valid JWT access token!"
-        }
+        # Delegate user data formatting to service layer
+        user_data = UserProfileService.get_user_profile_data(request.user)
+        
         return success_response(user_data, "Protected endpoint accessed successfully", status=200)
 
     @forgot_password_spectacular_schema()  # New drf-spectacular
@@ -102,36 +160,30 @@ class AuthViewSet(ViewSet):
     @action(methods=["post"], detail=False, url_path="forgot-password", throttle_classes=[PasswordResetRateThrottle, AnonRateThrottle])
     def forgot_password(self, request):
         """
-        Generate password reset token and store in Redis with 10-minute TTL
+        Initiates password reset process by generating secure token
+        
+        This endpoint demonstrates how to delegate business logic to service layer
+        while keeping validation and HTTP concerns in the view layer.
         """
+        # Step 1: Validate the email input
         ser = ForgotPasswordSerializer(data=request.data)
         if not ser.is_valid():
             return error_response("07", "Invalid input", data=ser.errors, status=400)
         
-        validated_data: Dict[str, Any] = ser.validated_data  # type: ignore
-        email = validated_data["email"]
+        # Step 2: Extract validated email
+        # Type-safe access to validated data after successful validation
+        validated_data = ser.validated_data
+        if not isinstance(validated_data, dict):
+            return error_response("07", "Invalid data format", status=400)
+            
+        email = validated_data.get("email")
+        if not email:
+            return error_response("07", "Email is required", status=400)
         
         try:
-            # Initialize password reset service
-            reset_service = PasswordResetService()
-            
-            # Generate secure token
-            token = reset_service.generate_reset_token(email)
-            
-            # In development, return token in response
-            # In production, this would trigger an email with the token
-            response_data = {
-                "message": "Password reset token generated successfully",
-                "email": email
-            }
-            
-            # Only include token in development environment
-            from django.conf import settings
-            if settings.DEBUG:
-                response_data["token"] = token
-                response_data["dev_note"] = "Token included for development. In production, this will be sent via email."
-            else:
-                response_data["production_note"] = "Password reset instructions have been sent to your email address."
+            # Step 3: Delegate password reset initiation to service layer
+            reset_service = PasswordResetBusinessService()
+            response_data = reset_service.initiate_password_reset(email)
             
             return success_response(response_data, "Password reset initiated successfully", status=200)
             
@@ -143,40 +195,32 @@ class AuthViewSet(ViewSet):
     @action(methods=["post"], detail=False, url_path="reset-password", throttle_classes=[AuthCriticalRateThrottle])
     def reset_password(self, request):
         """
-        Verify token from Redis and reset user password
+        Completes password reset using token verification
+        
+        This endpoint shows how to handle password reset completion by
+        validating input and delegating the business logic to service layer.
         """
+        # Step 1: Validate the reset request data
         ser = ResetPasswordSerializer(data=request.data)
         if not ser.is_valid():
             return error_response("07", "Invalid input", data=ser.errors, status=400)
         
-        validated_data: Dict[str, Any] = ser.validated_data  # type: ignore
-        token = validated_data["token"]
-        new_password = validated_data["new_password"]
+        # Step 2: Extract validated data
+        # Type-safe access to validated data after successful validation
+        validated_data = ser.validated_data
+        if not isinstance(validated_data, dict):
+            return error_response("07", "Invalid data format", status=400)
+            
+        token = validated_data.get("token")
+        new_password = validated_data.get("new_password")
+        
+        if not token or not new_password:
+            return error_response("07", "Token and new password are required", status=400)
         
         try:
-            # Initialize password reset service
-            reset_service = PasswordResetService()
-            
-            # Verify and consume token
-            user = reset_service.verify_and_consume_token(token)
-            
-            if not user:
-                return error_response("11", "Invalid or expired token", 
-                                    data={"detail": "The password reset token is invalid or has expired."}, 
-                                    status=400)
-            
-            # Reset user password
-            user.set_password(new_password)
-            user.save()
-            
-            # Invalidate any remaining tokens for this user
-            reset_service.invalidate_user_tokens(user.id)
-            
-            response_data = {
-                "message": "Password reset successfully",
-                "user_id": user.id,
-                "email": user.email
-            }
+            # Step 3: Delegate password reset completion to service layer
+            reset_service = PasswordResetBusinessService()
+            response_data = reset_service.complete_password_reset(token, new_password)
             
             return success_response(response_data, "Password reset completed successfully", status=200)
             

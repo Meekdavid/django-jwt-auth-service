@@ -1,5 +1,6 @@
 import secrets
 import redis
+import logging
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from typing import Optional, Union
@@ -20,7 +21,6 @@ class PasswordResetService:
             self.redis_client.ping()
         except Exception as e:
             # Log the error and use a fallback
-            import logging
             logger = logging.getLogger(__name__)
             logger.warning(f"Redis connection failed: {e}. Password reset will use database fallback.")
             self.redis_client = None
@@ -60,7 +60,6 @@ class PasswordResetService:
         else:
             # If Redis is not available, you could store in database or raise an error
             # For now, we'll continue but password reset won't work properly
-            import logging
             logger = logging.getLogger(__name__)
             logger.warning("Redis not available, password reset token cannot be stored")
         
