@@ -16,7 +16,6 @@ DEBUG = False
 ALLOWED_HOSTS = [
     '.railway.app',
     '.up.railway.app', 
-    'web-production-c75a.up.railway.app',
     'localhost',
     '127.0.0.1',
 ]
@@ -64,78 +63,7 @@ TEMPLATES = [
     }
 ]
 
-# WSGI application with PORT handling
 WSGI_APPLICATION = "auth_service.wsgi.application"
-
-# Railway PORT configuration
-RAILWAY_PORT = os.environ.get("PORT", "8000")
-print(f"Railway PORT detected: {RAILWAY_PORT}")
-
-# Enhanced logging for debugging
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'detailed': {
-            'format': '[{asctime}] [{levelname}] [RAILWAY] {name}: {message}',
-            'style': '{',
-            'datefmt': '%Y-%m-%d %H:%M:%S'
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'detailed',
-            'level': 'DEBUG',
-        },
-        'error_file': {
-            'class': 'logging.StreamHandler',  # Railway doesn't support file logging
-            'formatter': 'detailed',
-            'level': 'ERROR',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'DEBUG',
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'django.request': {
-            'handlers': ['console', 'error_file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'django.server': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'gunicorn': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'railway_startup': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'auth_service': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'accounts': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-    },
-}
 
 # Database
 DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://postgres:tVmkcXvVXeaTjVeWaSoCJXQPaQdcfDDO@yamanote.proxy.rlwy.net:19661/railway")
@@ -188,26 +116,4 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "JWT Authentication Service",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
-}
-
-# Logging
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': 'INFO',
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-    },
 }
