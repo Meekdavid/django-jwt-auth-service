@@ -210,8 +210,8 @@ python manage.py createsuperuser
 
 ### **Environment Settings**
 - **Development**: `DJANGO_SETTINGS_MODULE=auth_service.settings.dev`
-- **Production**: `DJANGO_SETTINGS_MODULE=auth_service.settings.prod`
-- **Railway**: `DJANGO_SETTINGS_MODULE=auth_service.settings.railway`
+- **Production/Railway**: `DJANGO_SETTINGS_MODULE=auth_service.settings.railway`
+- **Testing**: `DJANGO_SETTINGS_MODULE=auth_service.settings.test`
 
 ## 🚀 Deployment
 
